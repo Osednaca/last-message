@@ -1,0 +1,174 @@
+@import "tailwindcss";
+
+@theme {
+  /* Near-black backgrounds */
+  --color-background: #0a0f0d;
+  --color-background-dark: #060a08;
+  --color-background-card: #0f1a15;
+  --color-background-overlay: rgba(6, 10, 8, 0.85);
+
+  /* Primary green/teal palette */
+  --color-primary-50: #e6fff5;
+  --color-primary-100: #b3ffe0;
+  --color-primary-200: #80ffcc;
+  --color-primary-300: #4dffb8;
+  --color-primary-400: #1affa3;
+  --color-primary-500: #00e68a;
+  --color-primary-600: #00b36b;
+  --color-primary-700: #00804d;
+  --color-primary-800: #004d2e;
+  --color-primary-900: #001a10;
+
+  /* Teal accent palette */
+  --color-teal-50: #e6fffa;
+  --color-teal-100: #b3fff0;
+  --color-teal-200: #80ffe6;
+  --color-teal-300: #4dffdc;
+  --color-teal-400: #1affd2;
+  --color-teal-500: #00e6b8;
+  --color-teal-600: #00b390;
+  --color-teal-700: #008068;
+  --color-teal-800: #004d3e;
+  --color-teal-900: #001a15;
+
+  /* Cyan accent glow palette */
+  --color-cyan-50: #e6feff;
+  --color-cyan-100: #b3fcff;
+  --color-cyan-200: #80faff;
+  --color-cyan-300: #4df8ff;
+  --color-cyan-400: #1af6ff;
+  --color-cyan-500: #00dce6;
+  --color-cyan-600: #00abb3;
+  --color-cyan-700: #007a80;
+  --color-cyan-800: #00494d;
+  --color-cyan-900: #00181a;
+
+  /* Foreground / text */
+  --color-foreground: #e0f2ec;
+  --color-foreground-muted: #8ba89e;
+  --color-foreground-dim: #4a6b5e;
+
+  /* Semantic colors */
+  --color-destructive: #ff4d4d;
+  --color-warning: #ffb84d;
+  --color-success: #00e68a;
+
+  /* Border */
+  --color-border: #1a3329;
+  --color-border-glow: rgba(0, 230, 184, 0.3);
+
+  /* Shadows / glows */
+  --shadow-glow-sm: 0 0 10px rgba(0, 230, 184, 0.2);
+  --shadow-glow-md: 0 0 20px rgba(0, 230, 184, 0.3);
+  --shadow-glow-lg: 0 0 40px rgba(0, 220, 230, 0.25);
+
+  /* Font family */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Base styles */
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Fade-in animation for overlay state transitions */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-in-out;
+}
+
+/* Glitch effect for Detected state */
+@keyframes glitch {
+  0% {
+    transform: translate(0);
+    text-shadow: none;
+  }
+  20% {
+    transform: translate(-2px, 1px);
+    text-shadow: 2px 0 var(--color-cyan-400), -2px 0 var(--color-primary-400);
+  }
+  40% {
+    transform: translate(2px, -1px);
+    text-shadow: -2px 0 var(--color-cyan-400), 2px 0 var(--color-primary-400);
+  }
+  60% {
+    transform: translate(-1px, 2px);
+    text-shadow: 1px 0 var(--color-cyan-400), -1px 0 var(--color-primary-400);
+  }
+  80% {
+    transform: translate(1px, -1px);
+    text-shadow: -1px 0 var(--color-cyan-400), 1px 0 var(--color-primary-400);
+  }
+  100% {
+    transform: translate(0);
+    text-shadow: none;
+  }
+}
+
+.animate-glitch {
+  animation: glitch 0.6s ease-in-out;
+}
+
+/* Pulsing gradient with green/cyan colors for Playing state */
+@keyframes pulse-gradient {
+  0% {
+    opacity: 0.3;
+    background-position: 0% 50%;
+  }
+  50% {
+    opacity: 0.6;
+    background-position: 100% 50%;
+  }
+  100% {
+    opacity: 0.3;
+    background-position: 0% 50%;
+  }
+}
+
+.animate-pulse-gradient {
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-cyan-500), var(--color-teal-500), var(--color-primary-500));
+  background-size: 300% 300%;
+  animation: pulse-gradient 3s ease-in-out infinite;
+}
+
+/* Pulsing glow effect synchronized with audio playback */
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 20px rgba(0, 230, 184, 0.2), 0 0 40px rgba(0, 220, 230, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(0, 230, 184, 0.4), 0 0 80px rgba(0, 220, 230, 0.25);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(0, 230, 184, 0.2), 0 0 40px rgba(0, 220, 230, 0.1);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Backdrop blur for camera during Playing state */
+.backdrop-blur-playing {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
