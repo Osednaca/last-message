@@ -1,6 +1,6 @@
-import type { AnalyzeResponse, LegacyGenerateResponse } from '@/types';
+import type { AnalyzeResponse, LegacyCloneResponse, LegacyGenerateResponse } from '@/types';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL ?? 'last-message-api.fly.dev';
 
 /**
  * Analyze a base64-encoded image by POSTing to the backend /analyze endpoint.
@@ -48,4 +48,32 @@ export async function generateLegacySpeech(
   }
 
   return (await response.json()) as LegacyGenerateResponse;
+}
+
+/**
+ * Clone a voice from an audio sample and generate TTS audio.
+ * Sends multipart/form-data POST to /legacy/clone.
+ * Uses an AbortSignal for timeout support.
+ */
+export async function cloneVoice(
+  audioBlob: Blob,
+  text: string,
+  signal?: AbortSignal,
+): Promise<LegacyCloneResponse> {
+  const formData = new FormData();
+  formData.append('audio', audioBlob, 'voice-sample.webm');
+  formData.append('text', text);
+
+  const response = await fetch(`${API_URL}/legacy/clone`, {
+    method: 'POST',
+    body: formData,
+    signal,
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.error ?? 'Clone failed');
+  }
+
+  return (await response.json()) as LegacyCloneResponse;
 }

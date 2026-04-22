@@ -16,7 +16,7 @@ const mockPlay = vi.fn().mockResolvedValue(undefined);
 const mockStop = vi.fn();
 
 vi.mock('@/hooks/useAudioPlayer', () => ({
-  useAudioPlayer: (options?: { onEnd?: () => void }) => {
+  useAudioPlayer: (_options?: { onEnd?: () => void }) => {
     return {
       play: mockPlay,
       stop: mockStop,

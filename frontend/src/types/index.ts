@@ -56,3 +56,17 @@ export interface AnalyzeError {
   error: string;
   detail: string;
 }
+
+// Voice imprint record for locally stored voice clone results
+export interface VoiceImprintRecord {
+  id: string;
+  type: 'legacy_voice';
+  text: string;
+  audioData: string;       // base64-encoded audio with data: prefix
+  createdAt: string;       // ISO 8601
+}
+
+// Legacy clone API response
+export interface LegacyCloneResponse {
+  audio_base64: string;
+}

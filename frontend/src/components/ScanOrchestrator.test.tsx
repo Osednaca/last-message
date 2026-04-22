@@ -20,6 +20,20 @@ vi.mock('@/hooks/useCollection', () => ({
   }),
 }));
 
+// Mock useScanSound hook
+const mockPlayScan = vi.fn();
+const mockStartAnalyzing = vi.fn();
+const mockStopAnalyzing = vi.fn();
+const mockPlayReveal = vi.fn();
+vi.mock('@/hooks/useScanSound', () => ({
+  useScanSound: () => ({
+    playScan: mockPlayScan,
+    startAnalyzing: mockStartAnalyzing,
+    stopAnalyzing: mockStopAnalyzing,
+    playReveal: mockPlayReveal,
+  }),
+}));
+
 // Mock getRandomMessage
 vi.mock('@/data/messages', () => ({
   getRandomMessage: () => ({
@@ -78,6 +92,10 @@ describe('ScanOrchestrator', () => {
 
     mockCaptureFrame.mockReturnValue('base64ImageData');
     mockAddToCollection.mockClear();
+    mockPlayScan.mockClear();
+    mockStartAnalyzing.mockClear();
+    mockStopAnalyzing.mockClear();
+    mockPlayReveal.mockClear();
   });
 
   afterEach(() => {
@@ -308,5 +326,215 @@ describe('ScanOrchestrator', () => {
         category: 'consumption',
       }),
     );
+  });
+});
+
+describe('ScanOrchestrator sound integration', () => {
+  const videoRef = { current: document.createElement('video') };
+
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    mockAudioInstances = [];
+    mockPlayImpl = () => Promise.resolve();
+    vi.stubGlobal('Audio', MockAudioInstance);
+
+    mockCaptureFrame.mockReturnValue('base64ImageData');
+    mockAddToCollection.mockClear();
+    mockPlayScan.mockClear();
+    mockStartAnalyzing.mockClear();
+    mockStopAnalyzing.mockClear();
+    mockPlayReveal.mockClear();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  // Requirement 7.1: playScan() is called when the scan button is clicked
+  it('calls playScan() when the scan button is clicked', async () => {
+    let resolveFetch!: (value: unknown) => void;
+    const fetchMock = vi.fn().mockImplementation(() => {
+      return new Promise((resolve) => {
+        resolveFetch = resolve;
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ScanOrchestrator videoRef={videoRef} />);
+
+    const scanButton = screen.getByRole('button', { name: 'Scan' });
+    await act(async () => {
+      fireEvent.click(scanButton);
+    });
+
+    expect(mockPlayScan).toHaveBeenCalledTimes(1);
+
+    // Cleanup: resolve fetch to avoid dangling promise
+    await act(async () => {
+      resolveFetch({
+        ok: true,
+        json: () => Promise.resolve({ label: 'bottle', category: 'consumption' }),
+      });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1300);
+    });
+    await act(async () => {
+      mockAudioInstances[0]?.trigger('ended');
+    });
+  });
+
+  // Requirement 8.1: startAnalyzing() is called after frame capture succeeds
+  it('calls startAnalyzing() after frame capture during API processing', async () => {
+    let resolveFetch!: (value: unknown) => void;
+    const fetchMock = vi.fn().mockImplementation(() => {
+      return new Promise((resolve) => {
+        resolveFetch = resolve;
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ScanOrchestrator videoRef={videoRef} />);
+
+    const scanButton = screen.getByRole('button', { name: 'Scan' });
+    await act(async () => {
+      fireEvent.click(scanButton);
+    });
+
+    // startAnalyzing should be called while waiting for API response
+    expect(mockStartAnalyzing).toHaveBeenCalledTimes(1);
+    // playScan is called first, then startAnalyzing
+    expect(mockPlayScan.mock.invocationCallOrder[0]).toBeLessThan(
+      mockStartAnalyzing.mock.invocationCallOrder[0],
+    );
+
+    // Cleanup
+    await act(async () => {
+      resolveFetch({
+        ok: true,
+        json: () => Promise.resolve({ label: 'bottle', category: 'consumption' }),
+      });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1300);
+    });
+    await act(async () => {
+      mockAudioInstances[0]?.trigger('ended');
+    });
+  });
+
+  // Requirement 8.3, 9.1: stopAnalyzing() and playReveal() are called when result arrives
+  it('calls stopAnalyzing() and playReveal() when the API response arrives', async () => {
+    let resolveFetch!: (value: unknown) => void;
+    const fetchMock = vi.fn().mockImplementation(() => {
+      return new Promise((resolve) => {
+        resolveFetch = resolve;
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ScanOrchestrator videoRef={videoRef} />);
+
+    const scanButton = screen.getByRole('button', { name: 'Scan' });
+    await act(async () => {
+      fireEvent.click(scanButton);
+    });
+
+    // Before API resolves, stopAnalyzing and playReveal should not be called
+    expect(mockStopAnalyzing).not.toHaveBeenCalled();
+    expect(mockPlayReveal).not.toHaveBeenCalled();
+
+    // Resolve fetch
+    await act(async () => {
+      resolveFetch({
+        ok: true,
+        json: () => Promise.resolve({ label: 'bottle', category: 'consumption' }),
+      });
+    });
+
+    // After API resolves, stopAnalyzing and playReveal should be called
+    await waitFor(() => {
+      expect(mockStopAnalyzing).toHaveBeenCalledTimes(1);
+      expect(mockPlayReveal).toHaveBeenCalledTimes(1);
+    });
+
+    // stopAnalyzing should be called before playReveal
+    expect(mockStopAnalyzing.mock.invocationCallOrder[0]).toBeLessThan(
+      mockPlayReveal.mock.invocationCallOrder[0],
+    );
+
+    // Cleanup
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1300);
+    });
+    await act(async () => {
+      mockAudioInstances[0]?.trigger('ended');
+    });
+  });
+
+  // Requirement 8.3: stopAnalyzing() is called when transitioning to detected state
+  it('transitions to detected state and calls playReveal()', async () => {
+    let resolveFetch!: (value: unknown) => void;
+    const fetchMock = vi.fn().mockImplementation(() => {
+      return new Promise((resolve) => {
+        resolveFetch = resolve;
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ScanOrchestrator videoRef={videoRef} />);
+
+    const scanButton = screen.getByRole('button', { name: 'Scan' });
+    await act(async () => {
+      fireEvent.click(scanButton);
+    });
+
+    await act(async () => {
+      resolveFetch({
+        ok: true,
+        json: () => Promise.resolve({ label: 'bottle', category: 'consumption' }),
+      });
+    });
+
+    // Verify detected state is shown alongside playReveal being called
+    await waitFor(() => {
+      expect(screen.getByText('Signal detected')).toBeInTheDocument();
+    });
+    expect(mockPlayReveal).toHaveBeenCalledTimes(1);
+
+    // Cleanup
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1300);
+    });
+    await act(async () => {
+      mockAudioInstances[0]?.trigger('ended');
+    });
+  });
+
+  // Requirement 13.2: stopAnalyzing() is called on API error (error path cleanup)
+  it('calls stopAnalyzing() on API error for cleanup', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error('Network error'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ScanOrchestrator videoRef={videoRef} />);
+
+    const scanButton = screen.getByRole('button', { name: 'Scan' });
+    await act(async () => {
+      fireEvent.click(scanButton);
+    });
+
+    // After error, stopAnalyzing should be called for cleanup
+    await waitFor(() => {
+      expect(mockStopAnalyzing).toHaveBeenCalledTimes(1);
+    });
+
+    // playReveal should NOT be called on error
+    expect(mockPlayReveal).not.toHaveBeenCalled();
+
+    // Should return to idle
+    await waitFor(() => {
+      expect(screen.getByText('Point your camera at an object')).toBeInTheDocument();
+    });
   });
 });

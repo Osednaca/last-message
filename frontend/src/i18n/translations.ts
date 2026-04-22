@@ -20,6 +20,7 @@ export const translations: TranslationStore = {
     error_mic_permission: 'Microphone access is required for recording',
 
     // Navigation
+    nav_home: 'Home',
     nav_collection: 'Collection',
     nav_legacy: 'Legacy Mode',
 
@@ -46,6 +47,25 @@ export const translations: TranslationStore = {
     camera_select_label: 'Select camera',
     camera_switch_error: 'Failed to switch camera. Using previous camera.',
     camera_switched: 'Switched to {label}',
+
+    // Voice imprint
+    vi_title: 'Leave your voice in the future',
+    vi_subtitle: 'Your voice can outlive you',
+    vi_start_recording: 'Start Recording',
+    vi_stop_recording: 'Stop Recording',
+    vi_processing: 'Processing voice imprint…',
+    vi_signal_lost: 'Signal lost… try again',
+    vi_retry: 'Retry',
+    vi_save_imprint: 'Save Imprint',
+    vi_replay: 'Replay',
+    vi_storage_full: 'Storage full — imprint played but not saved',
+    vi_mic_error: 'Microphone access is required for voice imprint',
+    vi_narrative_intro: 'We recovered this voice… It belongs to someone from your time…',
+    vi_narrative_signal: '📡 Signal reconstructed…',
+    vi_narrative_detected: 'Voice imprint detected…',
+    vi_narrative_playing: 'Playing message from the future…',
+    vi_tab_text: 'Text Message',
+    vi_tab_voice: 'Voice Imprint',
   },
 };
 

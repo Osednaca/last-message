@@ -23,5 +23,9 @@ class LegacyGenerateResponse(BaseModel):
     audio_base64: str
 
 
+class LegacyCloneResponse(BaseModel):
+    audio_base64: str
+
+
 class LegacyErrorResponse(BaseModel):
     error: str

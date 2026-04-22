@@ -7,13 +7,11 @@
  * Validates: Requirements 2.2, 3.5, 9.2
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useCollection } from '../hooks/useCollection';
 import { analyzeImage } from '../api/client';
 import type { CollectionRecord, Category } from '../types';
-
-const STORAGE_KEY = 'echoes-collection';
 
 function makeRecord(
   messageId: string,
@@ -148,7 +146,7 @@ const mockPlay = vi.fn().mockResolvedValue(undefined);
 const mockStop = vi.fn();
 
 vi.mock('@/hooks/useAudioPlayer', () => ({
-  useAudioPlayer: (options?: { onEnd?: () => void }) => {
+  useAudioPlayer: (_options?: { onEnd?: () => void }) => {
     return {
       play: mockPlay,
       stop: mockStop,

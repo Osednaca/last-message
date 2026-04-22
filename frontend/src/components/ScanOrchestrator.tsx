@@ -3,6 +3,7 @@ import type { OverlayState, Category } from '@/types';
 import { analyzeImage } from '@/api/client';
 import { useImageCapture } from '@/hooks/useImageCapture';
 import { useCollection } from '@/hooks/useCollection';
+import { useScanSound } from '@/hooks/useScanSound';
 import { getRandomMessage } from '@/data/messages';
 import { Overlay } from '@/components/Overlay';
 import { t } from '@/i18n/translations';
@@ -32,6 +33,7 @@ function playAudio(src: string): Promise<void> {
 export function ScanOrchestrator({ videoRef }: ScanOrchestratorProps) {
   const { captureFrame } = useImageCapture(videoRef);
   const { addToCollection } = useCollection();
+  const { playScan, startAnalyzing, stopAnalyzing, playReveal } = useScanSound();
 
   const [overlayState, setOverlayState] = useState<OverlayState>('idle');
   const [objectLabel, setObjectLabel] = useState<string | undefined>();
@@ -43,6 +45,7 @@ export function ScanOrchestrator({ videoRef }: ScanOrchestratorProps) {
 
     setIsProcessing(true);
     setOverlayState('scanning');
+    playScan();
     setObjectLabel(undefined);
     setMessageText(undefined);
 
@@ -57,11 +60,14 @@ export function ScanOrchestrator({ videoRef }: ScanOrchestratorProps) {
       }
 
       // 2. POST to /analyze with 5s timeout
+      startAnalyzing();
       const result = await analyzeImage(base64Image, controller.signal);
       clearTimeout(timeoutId);
+      stopAnalyzing();
 
       // 3. Transition to detected
       setOverlayState('detected');
+      playReveal();
       setObjectLabel(result.label);
 
       // 4. Select random message for the category
@@ -97,6 +103,7 @@ export function ScanOrchestrator({ videoRef }: ScanOrchestratorProps) {
       }
     } catch (err: unknown) {
       clearTimeout(timeoutId);
+      stopAnalyzing();
 
       if (err instanceof DOMException && err.name === 'AbortError') {
         setMessageText(t('error_timeout'));
@@ -110,7 +117,7 @@ export function ScanOrchestrator({ videoRef }: ScanOrchestratorProps) {
     } finally {
       setIsProcessing(false);
     }
-  }, [isProcessing, captureFrame, addToCollection]);
+  }, [isProcessing, captureFrame, addToCollection, playScan, startAnalyzing, stopAnalyzing, playReveal]);
 
   return (
     <>

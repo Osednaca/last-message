@@ -14,18 +14,14 @@ const mockPlay = vi.fn().mockResolvedValue(undefined);
 const mockStop = vi.fn();
 let mockIsPlaying = false;
 let mockAudioError: string | null = null;
-let capturedOnEnd: (() => void) | undefined;
 
 vi.mock('@/hooks/useAudioPlayer', () => ({
-  useAudioPlayer: (options?: { onEnd?: () => void }) => {
-    capturedOnEnd = options?.onEnd;
-    return {
-      play: mockPlay,
-      stop: mockStop,
-      isPlaying: mockIsPlaying,
-      error: mockAudioError,
-    };
-  },
+  useAudioPlayer: () => ({
+    play: mockPlay,
+    stop: mockStop,
+    isPlaying: mockIsPlaying,
+    error: mockAudioError,
+  }),
 }));
 
 const STORAGE_KEY = 'echoes-legacy-messages';
@@ -39,7 +35,6 @@ describe('LegacyRecorder', () => {
     mockStop.mockReset();
     mockIsPlaying = false;
     mockAudioError = null;
-    capturedOnEnd = undefined;
 
     // Stub crypto.randomUUID for deterministic IDs
     vi.stubGlobal('crypto', {
