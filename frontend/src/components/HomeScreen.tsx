@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAudio } from '@/hooks/useAudio';
 import { useHomeSound } from '@/hooks/useHomeSound';
+import { BackgroundVideo } from './BackgroundVideo';
 
 export type HomeScreenPhase = 'intro' | 'prompted' | 'activated' | 'exiting';
 
@@ -77,13 +78,16 @@ export function HomeScreen({ onStartScanning, onLeaveMessage }: HomeScreenProps)
   return (
     <div
       data-testid="home-screen"
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-0 flex items-center justify-center"
       style={{
         opacity: isExiting ? 0 : 1,
         filter: isExiting ? 'blur(8px)' : 'none',
         transition: 'opacity 500ms ease, filter 500ms ease',
       }}
     >
+      {/* Background video layer */}
+      <BackgroundVideo src="/video/nature.mp4" fallbackSrc="" />
+
       {/* Animated gradient background */}
       <div
         className="absolute inset-0"
@@ -92,6 +96,7 @@ export function HomeScreen({ onStartScanning, onLeaveMessage }: HomeScreenProps)
             'linear-gradient(135deg, var(--color-background) 0%, var(--color-primary-900) 25%, var(--color-background-dark) 50%, var(--color-teal-900) 75%, var(--color-background) 100%)',
           backgroundSize: '400% 400%',
           animation: 'homeGradientShift 12s ease-in-out infinite',
+          opacity: 0.3,
         }}
       />
 

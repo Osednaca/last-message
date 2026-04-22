@@ -1,6 +1,10 @@
 import { useRef, useState } from 'react';
+import { HelpCircle, Mail } from 'lucide-react';
 import { Camera } from '@/components/Camera';
 import { CollectionView } from '@/components/CollectionView';
+import { ContactModal } from '@/components/ContactModal';
+import { FloatingIconButton } from '@/components/FloatingIconButton';
+import { HelpPage } from '@/components/HelpPage';
 import { HomeScreen } from '@/components/HomeScreen';
 import { LegacyRecorder } from '@/components/LegacyRecorder';
 import { VoiceImprintFlow } from '@/components/VoiceImprintFlow';
@@ -13,16 +17,50 @@ function App() {
   const [showCollection, setShowCollection] = useState(false);
   const [showLegacy, setShowLegacy] = useState(false);
   const [legacyTab, setLegacyTab] = useState<'text' | 'voice'>('text');
+  const [showHelp, setShowHelp] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+
+  if (showHelp) {
+    return (
+      <HelpPage
+        onBack={() => {
+          setShowHelp(false);
+          setShowHome(true);
+        }}
+      />
+    );
+  }
 
   if (showHome) {
     return (
-      <HomeScreen
-        onStartScanning={() => setShowHome(false)}
-        onLeaveMessage={() => {
-          setShowHome(false);
-          setShowLegacy(true);
-        }}
-      />
+      <>
+        <HomeScreen
+          onStartScanning={() => setShowHome(false)}
+          onLeaveMessage={() => {
+            setShowHome(false);
+            setShowLegacy(true);
+          }}
+        />
+        <FloatingIconButton
+          icon={<HelpCircle size={22} />}
+          onClick={() => {
+            setShowHome(false);
+            setShowHelp(true);
+          }}
+          position="left"
+          ariaLabel="Help"
+        />
+        <FloatingIconButton
+          icon={<Mail size={22} />}
+          onClick={() => setContactOpen(true)}
+          position="right"
+          ariaLabel="Contact"
+        />
+        <ContactModal
+          isOpen={contactOpen}
+          onClose={() => setContactOpen(false)}
+        />
+      </>
     );
   }
 

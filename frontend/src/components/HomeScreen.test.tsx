@@ -30,6 +30,14 @@ vi.mock('@/hooks/useHomeSound', () => ({
   }),
 }));
 
+// Mock BackgroundVideo — replace with a simple div to keep HomeScreen tests
+// isolated from video rendering logic.
+vi.mock('./BackgroundVideo', () => ({
+  BackgroundVideo: (props: Record<string, unknown>) => (
+    <div data-testid="background-video" data-src={props.src} data-fallback={props.fallbackSrc} />
+  ),
+}));
+
 // Mock HTMLAudioElement globally (AudioManager uses `new Audio()`)
 vi.stubGlobal('Audio', vi.fn(() => ({
   src: '',
@@ -318,5 +326,18 @@ describe('HomeScreen', () => {
     fireEvent.click(screen.getByTestId('btn-start-scanning'));
 
     expect(mockStopAmbient).toHaveBeenCalled();
+  });
+
+  // -----------------------------------------------------------------------
+  // BackgroundVideo integration — Requirements 8.1, 8.3, 8.5
+  // -----------------------------------------------------------------------
+
+  it('renders BackgroundVideo inside the home-screen container', () => {
+    renderHomeScreen();
+
+    const homeScreen = screen.getByTestId('home-screen');
+    const backgroundVideo = screen.getByTestId('background-video');
+
+    expect(homeScreen).toContainElement(backgroundVideo);
   });
 });
