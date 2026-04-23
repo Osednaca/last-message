@@ -170,9 +170,9 @@ describe('ScanOrchestrator', () => {
     );
   });
 
-  // Requirement 12.3: Timeout handling (API takes >5s)
-  it('returns overlay to idle when API does not respond within 5 seconds', async () => {
-    // Mock fetch that never resolves — will be aborted by the 5s timeout
+  // Requirement 12.3: Timeout handling (API takes >15s)
+  it('returns overlay to idle when API does not respond within 15 seconds', async () => {
+    // Mock fetch that never resolves — will be aborted by the 15s timeout
     const fetchMock = vi.fn().mockImplementation((_url: string, options: RequestInit) => {
       return new Promise((_resolve, reject) => {
         options.signal?.addEventListener('abort', () => {
@@ -192,9 +192,9 @@ describe('ScanOrchestrator', () => {
     // Scanning state
     expect(screen.getByText('Analyzing environment...')).toBeInTheDocument();
 
-    // Advance past the 5s timeout
+    // Advance past the 15s timeout
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(5100);
+      await vi.advanceTimersByTimeAsync(15_100);
     });
 
     // Should return to idle state after timeout

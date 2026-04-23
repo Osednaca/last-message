@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { OverlayState, Category } from '@/types';
 import { analyzeImage } from '@/api/client';
 import { useImageCapture } from '@/hooks/useImageCapture';
@@ -8,7 +8,7 @@ import { getRandomMessage } from '@/data/messages';
 import { Overlay } from '@/components/Overlay';
 import { t } from '@/i18n/translations';
 
-const TIMEOUT_MS = 5000;
+const TIMEOUT_MS = 15_000;
 
 interface ScanOrchestratorProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -40,8 +40,29 @@ export function ScanOrchestrator({ videoRef }: ScanOrchestratorProps) {
   const [messageText, setMessageText] = useState<string | undefined>();
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Keep a ref to the active AbortController so we can abort on unmount
+  const controllerRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
+
+  // Abort any in-flight request when the component unmounts (e.g. user
+  // navigates back to Home while a scan is running).
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      controllerRef.current?.abort();
+    };
+  }, []);
+
   const handleScan = useCallback(async () => {
     if (isProcessing) return;
+
+    // Abort any lingering previous request (defensive — shouldn't happen
+    // because isProcessing guards against it, but just in case).
+    controllerRef.current?.abort();
+
+    const controller = new AbortController();
+    controllerRef.current = controller;
 
     setIsProcessing(true);
     setOverlayState('scanning');
@@ -49,7 +70,6 @@ export function ScanOrchestrator({ videoRef }: ScanOrchestratorProps) {
     setObjectLabel(undefined);
     setMessageText(undefined);
 
-    const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
     try {
@@ -59,11 +79,14 @@ export function ScanOrchestrator({ videoRef }: ScanOrchestratorProps) {
         throw new Error(t('error_generic'));
       }
 
-      // 2. POST to /analyze with 5s timeout
+      // 2. POST to /analyze
       startAnalyzing();
       const result = await analyzeImage(base64Image, controller.signal);
       clearTimeout(timeoutId);
       stopAnalyzing();
+
+      // If aborted while awaiting, bail out silently
+      if (!mountedRef.current) return;
 
       // 3. Transition to detected
       setOverlayState('detected');
@@ -76,6 +99,8 @@ export function ScanOrchestrator({ videoRef }: ScanOrchestratorProps) {
 
       // Brief pause on detected state so user can see it
       await new Promise((resolve) => setTimeout(resolve, 1200));
+
+      if (!mountedRef.current) return;
 
       // 5. Transition to playing
       setOverlayState('playing');
@@ -93,7 +118,6 @@ export function ScanOrchestrator({ videoRef }: ScanOrchestratorProps) {
         setOverlayState('idle');
       } catch {
         // Audio failed — fall back to displaying message text
-        // Message text is already set, so it will be visible in the overlay
         addToCollection({
           messageId: message.id,
           category: result.category as Category,
@@ -104,6 +128,9 @@ export function ScanOrchestrator({ videoRef }: ScanOrchestratorProps) {
     } catch (err: unknown) {
       clearTimeout(timeoutId);
       stopAnalyzing();
+
+      // If aborted due to unmount, don't try to update state
+      if (!mountedRef.current) return;
 
       if (err instanceof DOMException && err.name === 'AbortError') {
         setMessageText(t('error_timeout'));
@@ -116,6 +143,9 @@ export function ScanOrchestrator({ videoRef }: ScanOrchestratorProps) {
       setOverlayState('idle');
     } finally {
       setIsProcessing(false);
+      if (controllerRef.current === controller) {
+        controllerRef.current = null;
+      }
     }
   }, [isProcessing, captureFrame, addToCollection, playScan, startAnalyzing, stopAnalyzing, playReveal]);
 
