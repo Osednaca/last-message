@@ -9,7 +9,6 @@
 ## 🚀 Demo
 
 🔗 Live App: https://lastmessage.navium.com.co
-🎥 Demo Video: *(add your link here)*
 
 ---
 
