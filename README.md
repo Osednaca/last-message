@@ -185,7 +185,7 @@ This is a hackathon project, but feedback and ideas are welcome!
 ## 📬 Contact
 
 Created by Oscar Navas
-📧 *(add your email)*
+📧 *on.navas@gmail.com*
 🌐 https://navium.com.co
 
 ---
